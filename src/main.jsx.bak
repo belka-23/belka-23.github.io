@@ -1,0 +1,164 @@
+import React, { useMemo, useState } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  ArrowRight, BarChart3, Building2, CalendarDays, ChevronDown, CircleUserRound,
+  Clock3, Compass, ExternalLink, Filter, Home, LogIn, Menu, Package,
+  Plane, Search, ShieldCheck, ShoppingBag, Trophy, WalletCards, X, Zap
+} from "lucide-react";
+import "./styles.css";
+
+const COMPANY_DATA = [
+  { ticker:"VRA", name:"Valais Aeronautics", sector:"Aerospace", price:184.22, change:3.84, series:[155,161,159,168,164,175,172,184] },
+  { ticker:"NTR", name:"North Belkan Rail", sector:"Infrastructure", price:92.70, change:-1.22, series:[99,96,98,94,97,93,95,92] },
+  { ticker:"GRI", name:"Gründer Energy", sector:"Energy", price:241.10, change:5.17, series:[203,211,215,209,222,231,229,241] },
+  { ticker:"KSP", name:"Kestrel Systems", sector:"Technology", price:128.44, change:1.09, series:[119,121,118,125,123,127,126,128] },
+  { ticker:"OBC", name:"Oured Bay Components", sector:"Manufacturing", price:67.83, change:-2.48, series:[74,72,71,69,70,68,69,67] }
+];
+
+const PROPERTIES = [
+  { title:"Grün Lake Operations Loft", region:"Grün", type:"Industrial", price:480000, img:"https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=70", tag:"Northern District" },
+  { title:"Sudentor Ridge Residence", region:"Sudentor", type:"Residential", price:735000, img:"https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=70", tag:"Mountain Region" },
+  { title:"Lazuli Civic Office", region:"Lazuli", type:"Commercial", price:1290000, img:"https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=70", tag:"Capital Sector" },
+  { title:"Felsen Coast Hangar", region:"Felsen", type:"Industrial", price:920000, img:"https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1200&q=70", tag:"Airfield Zone" }
+];
+
+const LISTINGS = [
+  { title:"Belkan Field Radio — Replica", seller:"Northline Atelier", price:320, category:"Collectibles", condition:"Museum-style replica" },
+  { title:"Sudentor Wool Flight Jacket", seller:"Kaiser Works", price:185, category:"Apparel", condition:"New" },
+  { title:"Felsen Airfield Poster Set", seller:"Runway Archive", price:75, category:"Prints", condition:"Limited run" },
+  { title:"Custom Hangar Signage", seller:"Gründer Fabrication", price:640, category:"Services", condition:"Made to order" }
+];
+
+const FIXTURES = [
+  ["Felsen Falcons","Lazuli Knights","2 — 1","Final"],
+  ["Grün Works FC","Sudentor 77","0 — 0","Final"],
+  ["Belkan Union","Oured Mariners","18:30","Today"],
+  ["Lazuli Knights","Felsen Falcons","20:00","Fri"]
+];
+
+const BETS = [
+  { event:"Belkan Union vs Oured Mariners", market:"Match winner", odds:[["Belkan Union","1.85"],["Draw","3.20"],["Oured Mariners","3.75"]] },
+  { event:"Lazuli Knights vs Felsen Falcons", market:"Match winner", odds:[["Lazuli Knights","2.10"],["Draw","3.10"],["Felsen Falcons","3.05"]] }
+];
+
+function Sparkline({series}) {
+  const min=Math.min(...series), max=Math.max(...series);
+  const pts=series.map((v,i)=>`${(i/(series.length-1))*100},${100-((v-min)/(max-min||1))*86-7}`).join(" ");
+  return <svg className="spark" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={pts} fill="none" stroke="currentColor" strokeWidth="3" vectorEffect="non-scaling-stroke"/></svg>;
+}
+
+function Notice() {
+  return <div className="fiction-banner"><ShieldCheck size={15}/> FAN-MADE FICTIONAL SETTING · NOT AN OFFICIAL BELKA / ACE COMBAT / GOVERNMENT / FINANCIAL SERVICE</div>;
+}
+
+function Footer() {
+  return <footer>
+    <div className="footer-grid">
+      <div><div className="brand small"><span className="crest">B</span><span>BELKA<span className="muted">/PORTAL</span></span></div><p>A fictional micronation interface inspired by the world and aesthetic of Ace Combat. All currencies, companies, properties, sports and events are invented.</p></div>
+      <div><b>Explore</b><a href="#markets">Markets</a><a href="#marketplace">Marketplace</a><a href="#property">Property</a><a href="#sports">Sports</a></div>
+      <div><b>Legal</b><a href="#privacy">Privacy Policy</a><a href="#terms">Terms of Service</a><a href="#demo">Demo mode</a></div>
+      <div><b>Project</b><p>Fan-made · Non-canonical<br/>No real payments<br/>No real property offers</p></div>
+    </div>
+    <div className="footer-bottom"><span>© 2026 Belka Portal — fictional fan project.</span><span>Built for GitHub Pages · Backend-ready architecture</span></div>
+  </footer>;
+}
+
+function App() {
+  const [tab,setTab]=useState("overview");
+  const [menu,setMenu]=useState(false);
+  const [signed,setSigned]=useState(false);
+  const [search,setSearch]=useState("");
+  const [propertyType,setPropertyType]=useState("All");
+  const [bets,setBets]=useState([]);
+  const [balance,setBalance]=useState(10000);
+
+  const filteredListings=useMemo(()=>LISTINGS.filter(x=>(x.title+" "+x.category).toLowerCase().includes(search.toLowerCase())),[search]);
+  const filteredProps=useMemo(()=>PROPERTIES.filter(x=>(propertyType==="All"||x.type===propertyType)),[propertyType]);
+
+  function addBet(event, selection, odds) {
+    setBets(b=>[...b,{event,selection,odds}]);
+  }
+
+  return <div className="app">
+    <Notice/>
+    <header className="nav">
+      <a className="brand" href="#top" aria-label="Belka Portal home"><span className="crest">B</span><span>BELKA<span className="muted">/PORTAL</span></span></a>
+      <nav className={menu?"open":""}>
+        {["overview","markets","marketplace","property","sports"].map(x=><a key={x} href={"#"+x} onClick={()=>setMenu(false)}>{x==="overview"?"Overview":x[0].toUpperCase()+x.slice(1)}</a>)}
+      </nav>
+      <div className="nav-actions">
+        {signed ? <button className="balance" onClick={()=>setSigned(false)}><WalletCards size={16}/> ℬ {balance.toLocaleString()}</button> : <button className="outline" onClick={()=>setSigned(true)}><LogIn size={16}/> Demo sign in</button>}
+        <button className="icon-btn mobile-menu" aria-label="Open navigation" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button>
+      </div>
+    </header>
+
+    <main id="top">
+      <section className="hero">
+        <video autoPlay muted loop playsInline poster="./media/belka-fallback.png" className="hero-video" aria-label="Fictional Belkan aviation and industrial scenery">
+          <source src="./media/belka-hero.mp4" type="video/mp4"/>
+        </video>
+        <div className="hero-shade"/>
+        <div className="hero-content">
+          <div className="eyebrow"><span className="dot"/> NORTHERN OSEA · FICTIONAL MICRONATION</div>
+          <h1>THE REPUBLIC<br/><em>OF BELKA</em></h1>
+          <p>A cinematic digital portal for a fictional nation of airfields, industry, markets and mountain cities.</p>
+          <div className="hero-buttons"><a className="primary" href="#markets">Explore the exchange <ArrowRight size={17}/></a><a className="ghost" href="#marketplace">Enter the marketplace</a></div>
+          <div className="hero-meta"><span><Plane size={15}/> FLIGHT-PLAN NETWORK</span><span><Zap size={15}/> ℬ BELKAN CURRENCY</span><span><ShieldCheck size={15}/> DEMO / PLAY-MONEY ONLY</span></div>
+        </div>
+        <div className="hero-coords">50°04′N 14°25′E<br/><span>BRIEFING // BLP-001</span></div>
+      </section>
+
+      <section className="ticker"><div className="ticker-label">FICTIONAL MARKET</div>{COMPANY_DATA.slice(0,4).map(c=><div className="tick" key={c.ticker}><b>{c.ticker}</b><span>ℬ {c.price.toFixed(2)}</span><i className={c.change>0?"up":"down"}>{c.change>0?"+":""}{c.change.toFixed(2)}%</i></div>)}</section>
+
+      <section className="section intro" id="overview">
+        <div className="section-kicker">01 / THE STATE</div>
+        <div className="split"><div><h2>A nation built around <span>flight.</span></h2></div><div><p>Belka Portal is a fictional, fan-made interface imagining how a small industrial nation might expose its civic, commercial and sporting life through one modern digital service.</p><p className="muted">The setting is non-canonical. Nothing here represents a real government, financial institution, property listing, bookmaker or service.</p></div></div>
+        <div className="stats"><div><small>FICTIONAL CURRENCY</small><strong>ℬ Belkan Mark</strong><span>Play-money unit</span></div><div><small>MARKET INDEX</small><strong>1,842.17</strong><span className="up">+1.64% today</span></div><div><small>ACTIVE AIRFIELDS</small><strong>17</strong><span>Imagined network</span></div><div><small>PORTAL STATUS</small><strong>DEMO</strong><span>Backend not connected</span></div></div>
+      </section>
+
+      <section className="section dark" id="markets">
+        <div className="section-kicker">02 / BELKAN EXCHANGE</div>
+        <div className="section-head"><div><h2>Markets, <span>fictionalised.</span></h2><p>Sample equities for an aviation, energy, manufacturing and technology economy.</p></div><span className="status-pill"><span className="live-dot"/> SAMPLE DATA</span></div>
+        <div className="market-grid">
+          {COMPANY_DATA.map(c=><article className="market-card" key={c.ticker}><div className="card-top"><span className="ticker-code">{c.ticker}</span><span>{c.sector}</span></div><h3>{c.name}</h3><div className="price">ℬ {c.price.toFixed(2)}</div><div className={c.change>0?"change up":"change down"}>{c.change>0?"+":""}{c.change.toFixed(2)}%</div><Sparkline series={c.series}/></article>)}
+        </div>
+        <div className="table-wrap"><table><thead><tr><th>Instrument</th><th>Sector</th><th>Last</th><th>Change</th><th>Session</th></tr></thead><tbody>{COMPANY_DATA.map(c=><tr key={c.ticker}><td><b>{c.ticker}</b> · {c.name}</td><td>{c.sector}</td><td>ℬ {c.price.toFixed(2)}</td><td className={c.change>0?"up":"down"}>{c.change>0?"+":""}{c.change.toFixed(2)}%</td><td>Open</td></tr>)}</tbody></table></div>
+      </section>
+
+      <section className="section" id="marketplace">
+        <div className="section-kicker">03 / CIVIL MARKET</div>
+        <div className="section-head"><div><h2>Trade the <span>fiction.</span></h2><p>Browse imagined goods and services. No payments are processed.</p></div><button className="primary" onClick={()=>alert("Demo mode: listing creation would be handled by the backend.")}><Package size={17}/> List an item</button></div>
+        <div className="toolbar"><div className="search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search fictional listings…"/></div><button className="filter"><Filter size={16}/> Filters</button></div>
+        <div className="listing-grid">{filteredListings.map(x=><article className="listing" key={x.title}><div className="listing-img"><Package size={30}/><span>FICTIONAL ITEM</span></div><div className="listing-body"><small>{x.category} · {x.condition}</small><h3>{x.title}</h3><p>Seller: <b>{x.seller}</b></p><div className="listing-price">ℬ {x.price.toLocaleString()}</div><button className="text-btn">View listing <ArrowRight size={15}/></button></div></article>)}</div>
+      </section>
+
+      <section className="section property" id="property">
+        <div className="section-kicker">04 / PROPERTY REGISTER</div>
+        <div className="section-head"><div><h2>Places across <span>Belka.</span></h2><p>Fictional properties for worldbuilding and interface demonstration only.</p></div><select value={propertyType} onChange={e=>setPropertyType(e.target.value)}><option>All</option><option>Residential</option><option>Commercial</option><option>Industrial</option></select></div>
+        <div className="property-grid">{filteredProps.map(p=><article className="property-card" key={p.title}><img src={p.img} alt="Fictional property illustration"/><div className="property-body"><span>{p.region} · {p.type}</span><h3>{p.title}</h3><p><Compass size={14}/> {p.tag}</p><div><strong>ℬ {p.price.toLocaleString()}</strong><button className="icon-btn" aria-label={"View "+p.title}><ArrowRight/></button></div></div></article>)}</div>
+      </section>
+
+      <section className="section dark" id="sports">
+        <div className="section-kicker">05 / BELKAN SPORT</div>
+        <div className="section-head"><div><h2>Weekend <span>briefing.</span></h2><p>All teams, fixtures and scores are fictional sample content.</p></div><Trophy size={35}/></div>
+        <div className="sports-grid"><div className="fixtures">{FIXTURES.map((f,i)=><div className="fixture" key={i}><span>{f[3]}</span><b>{f[0]}</b><strong>{f[2]}</strong><b>{f[1]}</b></div>)}</div><div className="standings"><h3>Table</h3>{["Felsen Falcons","Lazuli Knights","Belkan Union","Oured Mariners","Grün Works FC"].map((t,i)=><div className="standing" key={t}><span>{i+1}</span><b>{t}</b><strong>{18-i*2}</strong></div>)}</div></div>
+      </section>
+
+      <section className="section betting">
+        <div className="section-kicker">06 / PLAY-MONEY POOL</div>
+        <div className="section-head"><div><h2>Forecast the <span>fixture.</span></h2><p>Fictional odds only. This interface cannot accept real-money deposits, withdrawals or wagers.</p></div><div className="balance-box"><WalletCards size={17}/> Demo balance <b>ℬ {balance.toLocaleString()}</b></div></div>
+        <div className="bet-grid">{BETS.map(e=><article className="bet-card" key={e.event}><div><small>FICTIONAL EVENT</small><h3>{e.event}</h3></div><div className="odds">{e.odds.map(([team,odd])=><button key={team} onClick={()=>addBet(e.event,team,odd)}><span>{team}</span><b>{odd}</b></button>)}</div></article>)}</div>
+        {bets.length>0 && <aside className="bet-slip"><div><b>Demo bet slip</b><span>{bets.length} selection{bets.length>1?"s":""}</span></div>{bets.map((b,i)=><div className="slip-row" key={i}><span>{b.selection}<small>{b.event}</small></span><b>{b.odds}</b></div>)}<button className="primary" onClick={()=>{setBalance(x=>x-100);setBets([])}}>Place ℬ 100 demo wager</button></aside>}
+      </section>
+
+      <section className="section account" id="account">
+        <div className="account-card"><div className="account-icon"><CircleUserRound size={34}/></div><div><div className="section-kicker">07 / IDENTITY</div><h2>{signed?"Demo account active":"Your Belkan profile"}</h2><p>{signed?"You're viewing a local demo identity. Persistent accounts require a configured backend.":"Sign-in is intentionally simulated in this static build. Connect Supabase or Firebase before enabling real authentication."}</p></div><button className="outline" onClick={()=>setSigned(!signed)}>{signed?"Sign out":"Create demo account"}</button></div>
+      </section>
+
+      <section className="legal section" id="privacy"><div><h2>Privacy Policy</h2><p>This front-end demo does not create a real account, collect passwords, process payments or maintain authoritative balances. A production backend must define data retention, authentication, deletion and security practices before launch.</p></div><div id="terms"><h2>Terms of Service</h2><p>Belka Portal is a fan-made fictional interface. It is not affiliated with, endorsed by, or operated by the creators or rights holders of Ace Combat. All names, markets, currency, properties, teams, odds and events shown here are fictional.</p></div></section>
+    </main>
+    <Footer/>
+  </div>
+}
+
+createRoot(document.getElementById("root")).render(<App/>);
